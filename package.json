@@ -1,0 +1,15 @@
+{
+  "name": "sainsbury-mobile-sample",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sample grocery mobile API used to demo small vs large PR routing to Slack",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "demo:prs": "bash scripts/create-demo-prs.sh"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

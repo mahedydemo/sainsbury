@@ -1,0 +1,149 @@
+name: PR route to Slack
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  route-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Measure PR size and route
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          SMALL_PR_MAX_LINES: ${{ vars.SMALL_PR_MAX_LINES }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+          DIFF_URL: ${{ github.event.pull_request.html_url }}/files
+        run: |
+          set -euo pipefail
+
+          CHANNEL="${SLACK_CHANNEL_ID:-C0BGHB7JNLX}"
+          MAX="${SMALL_PR_MAX_LINES:-120}"
+
+          STATS=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '{additions,deletions,changed_files}')
+          ADD=$(echo "$STATS" | jq -r .additions)
+          DEL=$(echo "$STATS" | jq -r .deletions)
+          FILES=$(echo "$STATS" | jq -r .changed_files)
+          TOTAL=$((ADD + DEL))
+
+          echo "PR #${PR_NUMBER}: +${ADD}/-${DEL} (${TOTAL} lines across ${FILES} files); threshold=${MAX}"
+
+          if [ "$TOTAL" -gt "$MAX" ]; then
+            gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$(cat <<EOF
+          ## Large PR — routed to GitHub Copilot
+
+          This change is **${TOTAL} lines** (+${ADD}/-${DEL} across ${FILES} files), above the Slack review threshold of **${MAX}** lines.
+
+          - **Slack:** skipped (keeps #project-mobile focused on small, reviewable diffs)
+          - **Next:** use **GitHub Copilot** code review on this PR for the large diff
+          EOF
+          )"
+            echo "Routed large PR away from Slack"
+            exit 0
+          fi
+
+          if [ -z "${SLACK_BOT_TOKEN:-}" ]; then
+            echo "::error::SLACK_BOT_TOKEN secret is not set"
+            exit 1
+          fi
+
+          FILE_LIST=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+            --jq '[.[] | "• `\(.filename)` (+ \(.additions)/- \(.deletions))"] | join("\n")')
+
+          DIFF=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" -H "Accept: application/vnd.github.v3.diff" || true)
+          MAX_DIFF=2800
+          if [ "${#DIFF}" -gt "$MAX_DIFF" ]; then
+            DIFF_POST="${DIFF:0:${MAX_DIFF}}
+
+          … truncated (${#DIFF} chars total). Full diff: ${DIFF_URL}"
+          else
+            DIFF_POST="$DIFF"
+          fi
+
+          export CHANNEL ADD DEL FILES MAX FILE_LIST DIFF_POST
+          python3 <<'PY'
+          import json, os, urllib.request
+
+          channel = os.environ["CHANNEL"]
+          pr_number = os.environ["PR_NUMBER"]
+          pr_title = os.environ["PR_TITLE"]
+          pr_url = os.environ["PR_URL"]
+          pr_user = os.environ["PR_USER"]
+          pr_base = os.environ["PR_BASE"]
+          pr_head = os.environ["PR_HEAD"]
+          add = os.environ["ADD"]
+          delete = os.environ["DEL"]
+          files = os.environ["FILES"]
+          max_lines = os.environ["MAX"]
+          file_list = os.environ["FILE_LIST"]
+          diff_post = os.environ["DIFF_POST"]
+
+          # Slack section text limit is 3000 chars
+          diff_block = f"*Diff*\n```\n{diff_post}\n```"
+          if len(diff_block) > 2900:
+              diff_block = diff_block[:2900] + "\n```"
+
+          payload = {
+              "channel": channel,
+              "text": f"Small PR ready for Slack review: {pr_title}",
+              "blocks": [
+                  {
+                      "type": "header",
+                      "text": {"type": "plain_text", "text": "Small PR → Slack review", "emoji": True},
+                  },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": (
+                              f"*<{pr_url}|#{pr_number} {pr_title}>*\n"
+                              f"Author: `{pr_user}` · `{pr_base}` ← `{pr_head}`\n"
+                              f"Size: *+{add}/-{delete}* ({files} files) — under {max_lines}-line Slack threshold"
+                          ),
+                      },
+                  },
+                  {
+                      "type": "section",
+                      "text": {"type": "mrkdwn", "text": f"*Files*\n{file_list}"},
+                  },
+                  {"type": "divider"},
+                  {"type": "section", "text": {"type": "mrkdwn", "text": diff_block}},
+                  {
+                      "type": "context",
+                      "elements": [
+                          {
+                              "type": "mrkdwn",
+                              "text": "Large PRs skip Slack and stay on GitHub for Copilot review.",
+                          }
+                      ],
+                  },
+              ],
+          }
+
+          req = urllib.request.Request(
+              "https://slack.com/api/chat.postMessage",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                  "Authorization": f"Bearer {os.environ['SLACK_BOT_TOKEN']}",
+                  "Content-Type": "application/json; charset=utf-8",
+              },
+              method="POST",
+          )
+          with urllib.request.urlopen(req) as resp:
+              body = json.loads(resp.read().decode("utf-8"))
+          if not body.get("ok"):
+              raise SystemExit(f"Slack API error: {body}")
+          print(f"Posted small PR #{pr_number} to Slack channel {channel}")
+          PY
