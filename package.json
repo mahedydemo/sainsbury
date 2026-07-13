@@ -7,7 +7,10 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test test/*.test.js",
-    "demo:prs": "bash scripts/create-demo-prs.sh"
+    "pr:small": "bash scripts/create-test-pr.sh small",
+    "pr:large": "bash scripts/create-test-pr.sh large",
+    "pr:both": "bash scripts/create-test-pr.sh both",
+    "demo:prs": "bash scripts/create-test-pr.sh both"
   },
   "engines": {
     "node": ">=18"
