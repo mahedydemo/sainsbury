@@ -1,17 +1,3 @@
-# Slack app manifest — GitHub PR Router (small PRs → Slack)
-#
-# Posts small PR summaries + diffs into Slack (#project-mobile).
-# Large PRs are left on GitHub for Copilot (handled by the Actions workflow).
-#
-# Setup:
-# 1. https://api.slack.com/apps → Create New App → From an app manifest
-# 2. Paste this file → Create
-# 3. Install to workspace → copy Bot User OAuth Token (xoxb-...)
-# 4. Invite the bot to #project-mobile: /invite @GitHub PR Router
-# 5. Store the token on the repo:
-#      gh secret set SLACK_BOT_TOKEN --repo mahedydemo/sainsbury
-#      gh secret set SLACK_CHANNEL_ID --repo mahedydemo/sainsbury <<< 'C0BGHB7JNLX'
-
 _metadata:
   major_version: 2
   minor_version: 1
@@ -20,7 +6,7 @@ display_information:
   name: GitHub PR Router
   description: Routes small GitHub PRs into Slack with summaries and diffs; leaves large PRs on GitHub for Copilot.
   background_color: "#f06c00"
-  long_description: "Demo bot for Sainsbury's mobile sample app. GitHub Actions measures PR size — small changes (under the line threshold) are posted to #project-mobile with the PR link, file list, and unified diff. Large PRs skip Slack so reviewers can use GitHub Copilot on the full change set."
+  long_description: Demo bot for Sainsbury's mobile sample app. GitHub Actions measures PR size — small changes (under the line threshold) are posted to #project-mobile with the PR link, file list, and unified diff. Large PRs skip Slack so reviewers can use GitHub Copilot on the full change set.
 
 features:
   app_home:
@@ -34,20 +20,13 @@ features:
 oauth_config:
   scopes:
     bot:
-      # Post PR summary + diff messages
       - chat:write
-      # Post into public channels without a prior /invite (optional convenience)
       - chat:write.public
-      # Upload the unified diff as a .diff file attachment
       - files:write
-      # Resolve channel names / membership when debugging
       - channels:read
       - groups:read
 
 settings:
-  # Outbound-only: GitHub Actions calls chat.postMessage / files.uploadV2.
-  # No Slash commands, Events API, or Interactivity required.
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false
-  is_hosted: false

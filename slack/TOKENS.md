@@ -3,7 +3,7 @@
 ## Create the app
 
 1. Open [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From an app manifest**
-2. Paste [`github-pr-router.manifest.yaml`](./github-pr-router.manifest.yaml)
+2. Paste **[`github-pr-router.manifest.json`](./github-pr-router.manifest.json)** (use the **JSON** tab), or the YAML file on the **YAML** tab
 3. **Install to Workspace**
 4. Copy **Bot User OAuth Token** (`xoxb-...`) from **OAuth & Permissions**
 
