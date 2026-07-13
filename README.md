@@ -7,6 +7,7 @@ Demo that **routes small PRs into Slack** (`#project-mobile`) with the PR summar
 | `src/` | Sample grocery mobile API (catalog, basket, promos) |
 | `.github/workflows/pr-route-to-slack.yml` | Size gate + Slack post for small PRs |
 | `scripts/create-test-pr.sh` | Operator-driven test PRs: `small`, `large`, or `both` |
+| `slack/github-pr-router.manifest.yaml` | Slack app manifest for the GitHub PR Router bot |
 
 ## Threshold
 
@@ -17,17 +18,19 @@ A PR is **small** when `additions + deletions <= 120` (override with repo variab
 
 ## Setup
 
-1. Invite a Slack bot that can `chat:write` into `#project-mobile`.
-2. Add GitHub Actions secrets on `mahedydemo/sainsbury`:
+1. Create the **GitHub PR Router** Slack app from [`slack/github-pr-router.manifest.yaml`](slack/github-pr-router.manifest.yaml) (see [`slack/TOKENS.md`](slack/TOKENS.md)).
+2. Invite `@GitHub PR Router` into `#project-mobile`.
+3. Add GitHub Actions secrets on `mahedydemo/sainsbury`:
 
 ```bash
 gh secret set SLACK_BOT_TOKEN --repo mahedydemo/sainsbury
-# paste xoxb-... token
+# paste the new app's xoxb-... token
+gh secret set SLACK_CHANNEL_ID --repo mahedydemo/sainsbury <<< 'C0BGHB7JNLX'
 ```
 
-Optional: `SLACK_CHANNEL_ID` (defaults to `C0BGHB7JNLX`).
+Optional: `SMALL_PR_MAX_LINES` repo variable (defaults to `120`).
 
-3. Create test PRs on demand:
+## Create test PRs
 
 ```bash
 npm test
