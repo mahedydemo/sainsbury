@@ -40,23 +40,94 @@ jobs:
 
           echo "PR #${PR_NUMBER}: +${ADD}/-${DEL} (${TOTAL} lines across ${FILES} files); threshold=${MAX}"
 
+          if [ -z "${SLACK_BOT_TOKEN:-}" ]; then
+            echo "::error::SLACK_BOT_TOKEN secret is not set"
+            exit 1
+          fi
+
           if [ "$TOTAL" -gt "$MAX" ]; then
             gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$(cat <<EOF
           ## Large PR — routed to GitHub Copilot
 
           This change is **${TOTAL} lines** (+${ADD}/-${DEL} across ${FILES} files), above the Slack review threshold of **${MAX}** lines.
 
-          - **Slack:** skipped (keeps #project-mobile focused on small, reviewable diffs)
+          - **Slack:** short alert only (no diff dump)
           - **Next:** use **GitHub Copilot** code review on this PR for the large diff
           EOF
           )"
-            echo "Routed large PR away from Slack"
-            exit 0
-          fi
 
-          if [ -z "${SLACK_BOT_TOKEN:-}" ]; then
-            echo "::error::SLACK_BOT_TOKEN secret is not set"
-            exit 1
+            export CHANNEL ADD DEL FILES MAX
+            python3 <<'PY'
+          import json, os, urllib.request
+
+          payload = {
+              "channel": os.environ["CHANNEL"],
+              "text": f"Large PR routed to GitHub Copilot: {os.environ['PR_TITLE']}",
+              "blocks": [
+                  {
+                      "type": "header",
+                      "text": {
+                          "type": "plain_text",
+                          "text": "Large PR → GitHub Copilot",
+                          "emoji": True,
+                      },
+                  },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": (
+                              f"*<{os.environ['PR_URL']}|#{os.environ['PR_NUMBER']} {os.environ['PR_TITLE']}>*\n"
+                              f"Author: `{os.environ['PR_USER']}` · `{os.environ['PR_BASE']}` ← `{os.environ['PR_HEAD']}`\n"
+                              f"Size: *+{os.environ['ADD']}/-{os.environ['DEL']}* "
+                              f"({os.environ['FILES']} files) — over the {os.environ['MAX']}-line Slack threshold"
+                          ),
+                      },
+                  },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": (
+                              "*Diff not posted to Slack.* Review this change with "
+                              "*GitHub Copilot* on the PR — keeps #project-mobile focused on small diffs."
+                          ),
+                      },
+                  },
+                  {
+                      "type": "actions",
+                      "elements": [
+                          {
+                              "type": "button",
+                              "text": {"type": "plain_text", "text": "Open PR", "emoji": True},
+                              "url": os.environ["PR_URL"],
+                          },
+                          {
+                              "type": "button",
+                              "text": {"type": "plain_text", "text": "View files", "emoji": True},
+                              "url": os.environ["DIFF_URL"],
+                          },
+                      ],
+                  },
+              ],
+          }
+          req = urllib.request.Request(
+              "https://slack.com/api/chat.postMessage",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                  "Authorization": f"Bearer {os.environ['SLACK_BOT_TOKEN']}",
+                  "Content-Type": "application/json; charset=utf-8",
+              },
+              method="POST",
+          )
+          with urllib.request.urlopen(req) as resp:
+              body = json.loads(resp.read().decode("utf-8"))
+          if not body.get("ok"):
+              raise SystemExit(f"Slack API error: {body}")
+          print(f"Posted large-PR Copilot alert for #{os.environ['PR_NUMBER']} to Slack")
+          PY
+            echo "Routed large PR to Copilot (Slack alert sent, no diff)"
+            exit 0
           fi
 
           FILE_LIST=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
