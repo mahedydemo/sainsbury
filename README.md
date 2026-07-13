@@ -13,8 +13,8 @@ Demo that **routes small PRs into Slack** (`#project-mobile`) with the PR summar
 
 A PR is **small** when `additions + deletions <= 120` (override with repo variable `SMALL_PR_MAX_LINES`).
 
-- **Small** → Slack `#project-mobile` (`C0BGHB7JNLX`): title, author, stats, file list, truncated unified diff + link to full diff
-- **Large** → short Slack alert (no diff dump) + PR comment: review with GitHub Copilot
+- **Small** → Slack `#project-mobile`: summary + file list + full `pr-N.diff` upload (`files:write`)
+- **Large** → short Slack Copilot alert + full `pr-N.diff` upload; review on GitHub with Copilot
 
 ## Setup
 
