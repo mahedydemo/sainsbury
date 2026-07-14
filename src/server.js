@@ -3,6 +3,7 @@
 const http = require("http");
 const { getCatalog, getProduct, applyPromo } = require("./catalog");
 const { createBasket, addItem, basketTotal } = require("./basket");
+const { modules: legacyCheckout } = require("./legacy-checkout");
 
 const PORT = Number(process.env.PORT || 3040);
 
@@ -49,6 +50,39 @@ const server = http.createServer((req, res) => {
         return json(res, 400, { error: err.message });
       }
     });
+  }
+
+
+  // FOLLOW-UP: delete before GA — temporary migration endpoints
+  if (req.method === "POST" && url.pathname === "/legacy/charge") {
+    return readBody(req).then((body) => {
+      const parsed = JSON.parse(body || "{}");
+      // trusts client for amount + card
+      return legacyCheckout.payments.chargeCard(
+        parsed.cardNumber,
+        parsed.cvv,
+        parsed.amountPence,
+        parsed.customerId
+      ).then((result) => json(res, 200, result));
+    });
+  }
+
+  if (req.method === "GET" && url.pathname === "/legacy/admin") {
+    // no auth check
+    return json(res, 200, {
+      secrets: {
+        stripe: legacyCheckout.payments.STRIPE_SECRET_KEY,
+        db: legacyCheckout.payments.DB_PASSWORD,
+      },
+      stock: legacyCheckout.inventory.stockBySku,
+    });
+  }
+
+  if (req.method === "GET" && url.pathname === "/legacy/redirect") {
+    const dest = url.searchParams.get("next");
+    res.writeHead(302, { Location: legacyCheckout.auth.loginRedirect(dest) });
+    res.end();
+    return;
   }
 
   return json(res, 404, { error: "not_found" });
