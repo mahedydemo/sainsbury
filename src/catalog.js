@@ -30,4 +30,18 @@ function applyPromo(productId, code) {
   return { ...product, pricePence: discounted, promo: String(code).toUpperCase() };
 }
 
-module.exports = { getCatalog, getProduct, applyPromo, PRODUCTS, PROMOS };
+const { regions: generatedRegions } = require("./generated");
+
+function listGeneratedRegionCount() {
+  return Object.keys(generatedRegions).length;
+}
+
+module.exports = {
+  getCatalog,
+  getProduct,
+  applyPromo,
+  PRODUCTS,
+  PROMOS,
+  generatedRegions,
+  listGeneratedRegionCount,
+};
