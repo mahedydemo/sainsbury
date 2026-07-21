@@ -37,9 +37,9 @@ Repo variables (optional):
 
 ## How PR routing works
 
-- **Small PR** — additions + deletions ≤ 120 → Slack summary + full `pr-N.diff` file upload
-- **Large PR** — over threshold → Slack Copilot alert + full `.diff`; detailed review on GitHub Copilot
-- Diff upload uses Slack `files:write` (`files.getUploadURLExternal` / `files.completeUploadExternal`)
+- **Small PR** — additions + deletions ≤ 120 → Slack summary, file list, and live GitHub links
+- **Large PR** — over threshold → Slack Copilot alert and live GitHub links; detailed review on GitHub Copilot
+- Diffs remain in GitHub; no `.diff` files are uploaded to Slack
 
 ## Suggested Enterprise Search queries
 

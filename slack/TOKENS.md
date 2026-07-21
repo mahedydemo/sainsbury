@@ -5,7 +5,7 @@
 1. Open [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From an app manifest**
 2. Paste **[`github-pr-router.manifest.json`](./github-pr-router.manifest.json)** (use the **JSON** tab), or the YAML file on the **YAML** tab
 3. **Install to Workspace**
-4. Confirm bot scopes include **`files:write`** (plus `chat:write`). If you add scopes later, click **Reinstall to Workspace**
+4. Confirm bot scopes include `chat:write`; `files:write` is not required because diffs remain in GitHub
 5. Copy **Bot User OAuth Token** (`xoxb-...`) from **OAuth & Permissions**
 
 ## Wire to GitHub
