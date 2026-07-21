@@ -1,7 +1,7 @@
 "use strict";
 
 const PRODUCTS = [
-  { id: "sku-milk-2l", name: "British Whole Milk 2L", pricePence: 145, aisle: "Dairy" },
+  { id: "sku-milk-2l", name: "British Whole Milk 2L", pricePence: 148, aisle: "Dairy" },
   { id: "sku-bananas", name: "Fairtrade Bananas", pricePence: 95, aisle: "Fruit" },
   { id: "sku-sourdough", name: "Taste the Difference Sourdough", pricePence: 180, aisle: "Bakery" },
   { id: "sku-eggs-6", name: "Free Range Eggs x6", pricePence: 210, aisle: "Dairy" },
