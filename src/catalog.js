@@ -10,6 +10,7 @@ const PRODUCTS = [
 const PROMOS = {
   NECTAR10: 0.1,
   BANANA5: 0.05,
+  WEEKEND15: 0.15,
 };
 
 function getCatalog() {
