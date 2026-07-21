@@ -20,15 +20,24 @@ A PR is **small** when `additions + deletions <= 120` (override with repo variab
 
 1. Create the **GitHub PR Router** Slack app from [`slack/github-pr-router.manifest.yaml`](slack/github-pr-router.manifest.yaml) (see [`slack/TOKENS.md`](slack/TOKENS.md)).
 2. Invite `@GitHub PR Router` into `#project-mobile`.
-3. Add GitHub Actions secrets on `mahedydemo/sainsbury`:
+3. **Add GitHub Actions secrets** on `mahedydemo/sainsbury`:
 
 ```bash
 gh secret set SLACK_BOT_TOKEN --repo mahedydemo/sainsbury
 # paste the new app's xoxb-... token
 gh secret set SLACK_CHANNEL_ID --repo mahedydemo/sainsbury <<< 'C0BGHB7JNLX'
+gh secret set SLACK_SIGNING_SECRET --repo mahedydemo/sainsbury
 ```
 
+| Secret | Required | Notes |
+|--------|----------|-------|
+| `SLACK_BOT_TOKEN` | Yes | `xoxb-...` from OAuth & Permissions |
+| `SLACK_CHANNEL_ID` | Yes | `#project-mobile` = `C0BGHB7JNLX` |
+| `SLACK_SIGNING_SECRET` | Optional | From Slack app Basic Information |
+
 Optional: `SMALL_PR_MAX_LINES` repo variable (defaults to `120`).
+
+More searchable setup notes for Slack Enterprise Search: [`docs/enterprise-search.md`](docs/enterprise-search.md).
 
 ## Create test PRs
 
