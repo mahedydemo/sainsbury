@@ -3,6 +3,7 @@
 const http = require("http");
 const { getCatalog, getProduct, applyPromo } = require("./catalog");
 const { createBasket, addItem, basketTotal } = require("./basket");
+const { listInventory } = require("./inventory");
 
 const PORT = Number(process.env.PORT || 3040);
 
@@ -22,6 +23,10 @@ const server = http.createServer((req, res) => {
     const product = getProduct(id);
     if (!product) return json(res, 404, { error: "not_found" });
     return json(res, 200, { product });
+  }
+
+  if (req.method === "GET" && url.pathname === "/inventory") {
+    return json(res, 200, { inventory: listInventory() });
   }
 
   if (req.method === "POST" && url.pathname === "/basket") {
