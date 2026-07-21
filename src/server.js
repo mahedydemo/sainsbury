@@ -9,6 +9,13 @@ const PORT = Number(process.env.PORT || 3040);
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
+  if (req.method === "GET" && url.pathname === "/") {
+    return json(res, 200, {
+      service: "sainsbury-mobile-sample",
+      endpoints: ["/health", "/catalog", "/basket", "/basket/items", "/promo/apply"],
+    });
+  }
+
   if (req.method === "GET" && url.pathname === "/health") {
     return json(res, 200, { ok: true, service: "sainsbury-mobile-sample" });
   }
@@ -55,7 +62,7 @@ const server = http.createServer((req, res) => {
 });
 
 function json(res, status, payload) {
-  res.writeHead(status, { "Content-Type": "application/json" });
+  res.writeHead(status, { "Content-Type": "application/json", "X-Service": "sainsbury-mobile-sample" });
   res.end(JSON.stringify(payload));
 }
 
