@@ -18,7 +18,7 @@ function addItem(basketId, productId, qty = 1) {
   const product = getProduct(productId);
   if (!product) throw new Error("product_not_found");
   const quantity = Number(qty);
-  if (!Number.isFinite(quantity) || quantity < 1) throw new Error("invalid_qty");
+  if (!Number.isFinite(quantity) || quantity < 1 || quantity > 99) throw new Error("invalid_qty");
 
   const existing = basket.items.find((i) => i.productId === productId);
   if (existing) existing.qty += quantity;
