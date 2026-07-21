@@ -17,6 +17,7 @@ Searchable product and promo reference for the Sainsbury mobile sample API in `m
 |------|----------|------------|
 | `NECTAR10` | 10% | Any catalog product via `/promo/apply` |
 | `BANANA5` | 5% | Any catalog product via `/promo/apply` |
+| `WEEKEND15` | 15% | Weekend promo (demo) |
 
 ## API endpoints
 
