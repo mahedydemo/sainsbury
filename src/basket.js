@@ -31,4 +31,13 @@ function basketTotal(basket) {
   return basket.items.reduce((sum, i) => sum + i.unitPricePence * i.qty, 0);
 }
 
-module.exports = { createBasket, addItem, basketTotal };
+function removeItem(basketId, productId) {
+  const basket = baskets.get(basketId);
+  if (!basket) throw new Error("basket_not_found");
+  const before = basket.items.length;
+  basket.items = basket.items.filter((i) => i.productId !== productId);
+  if (basket.items.length === before) throw new Error("item_not_found");
+  return { id: basket.id, items: basket.items.map((i) => ({ ...i })) };
+}
+
+module.exports = { createBasket, addItem, removeItem, basketTotal };
