@@ -30,4 +30,8 @@ function applyPromo(productId, code) {
   return { ...product, pricePence: discounted, promo: String(code).toUpperCase() };
 }
 
-module.exports = { getCatalog, getProduct, applyPromo, PRODUCTS, PROMOS };
+function listPromos() {
+  return Object.entries(PROMOS).map(([code, rate]) => ({ code, rate }));
+}
+
+module.exports = { getCatalog, getProduct, applyPromo, listPromos, PRODUCTS, PROMOS };

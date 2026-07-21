@@ -1,7 +1,7 @@
 "use strict";
 
 const http = require("http");
-const { getCatalog, getProduct, applyPromo } = require("./catalog");
+const { getCatalog, getProduct, applyPromo, listPromos } = require("./catalog");
 const { createBasket, addItem, basketTotal } = require("./basket");
 
 const PORT = Number(process.env.PORT || 3040);
@@ -22,6 +22,10 @@ const server = http.createServer((req, res) => {
     const product = getProduct(id);
     if (!product) return json(res, 404, { error: "not_found" });
     return json(res, 200, { product });
+  }
+
+  if (req.method === "GET" && url.pathname === "/promos") {
+    return json(res, 200, { promos: listPromos() });
   }
 
   if (req.method === "POST" && url.pathname === "/basket") {
