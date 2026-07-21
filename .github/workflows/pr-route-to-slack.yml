@@ -48,13 +48,7 @@ jobs:
           FILE_LIST=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
             --jq '[.[] | "• `\(.filename)` (+ \(.additions)/- \(.deletions))"] | join("\n")')
 
-          DIFF_PATH="/tmp/pr-${PR_NUMBER}.diff"
-          gh api "repos/${REPO}/pulls/${PR_NUMBER}" \
-            -H "Accept: application/vnd.github.v3.diff" > "$DIFF_PATH" || true
-          DIFF_BYTES=$(wc -c < "$DIFF_PATH" | tr -d ' ')
-          echo "Diff file ${DIFF_PATH} (${DIFF_BYTES} bytes)"
-
-          export CHANNEL ADD DEL FILES MAX FILE_LIST DIFF_PATH DIFF_BYTES TOTAL
+          export CHANNEL ADD DEL FILES MAX FILE_LIST TOTAL
 
           if [ "$TOTAL" -gt "$MAX" ]; then
             ROUTE=large
@@ -63,7 +57,7 @@ jobs:
 
           This change is **${TOTAL} lines** (+${ADD}/-${DEL} across ${FILES} files), above the Slack review threshold of **${MAX}** lines.
 
-          - **Slack:** short alert + full \`.diff\` file attachment
+          - **Slack:** summary and direct GitHub links only
           - **Next:** use **GitHub Copilot** code review on this PR for the large change
           EOF
           )"
@@ -73,7 +67,7 @@ jobs:
           export ROUTE
 
           python3 <<'PY'
-          import json, os, urllib.parse, urllib.request
+          import json, os, urllib.request
 
           token = os.environ["SLACK_BOT_TOKEN"]
           channel = os.environ["CHANNEL"]
@@ -89,18 +83,12 @@ jobs:
           files = os.environ["FILES"]
           max_lines = os.environ["MAX"]
           file_list = os.environ.get("FILE_LIST", "")
-          diff_path = os.environ["DIFF_PATH"]
           diff_url = os.environ["DIFF_URL"]
-          diff_bytes = int(os.environ.get("DIFF_BYTES") or 0)
 
-          def slack_api(method, payload=None, form=None):
+          def slack_api(method, payload=None):
               headers = {"Authorization": f"Bearer {token}"}
-              if form is not None:
-                  data = urllib.parse.urlencode(form).encode("utf-8")
-                  headers["Content-Type"] = "application/x-www-form-urlencoded"
-              else:
-                  data = json.dumps(payload or {}).encode("utf-8")
-                  headers["Content-Type"] = "application/json; charset=utf-8"
+              data = json.dumps(payload or {}).encode("utf-8")
+              headers["Content-Type"] = "application/json; charset=utf-8"
               req = urllib.request.Request(
                   f"https://slack.com/api/{method}",
                   data=data,
@@ -113,40 +101,9 @@ jobs:
                   raise SystemExit(f"Slack API {method} error: {body}")
               return body
 
-          def upload_diff(initial_comment: str):
-              with open(diff_path, "rb") as f:
-                  content = f.read()
-              filename = f"pr-{pr_number}.diff"
-              meta = slack_api(
-                  "files.getUploadURLExternal",
-                  form={
-                      "filename": filename,
-                      "length": str(len(content)),
-                  },
-              )
-              upload_url = meta["upload_url"]
-              file_id = meta["file_id"]
-              put = urllib.request.Request(
-                  upload_url,
-                  data=content,
-                  method="POST",
-                  headers={"Content-Type": "application/octet-stream"},
-              )
-              with urllib.request.urlopen(put) as resp:
-                  resp.read()
-              slack_api(
-                  "files.completeUploadExternal",
-                  payload={
-                      "files": [{"id": file_id, "title": filename}],
-                      "channel_id": channel,
-                      "initial_comment": initial_comment,
-                  },
-              )
-              print(f"Uploaded {filename} ({len(content)} bytes) to {channel}")
-
           size_line = (
               f"Size: *+{add}/-{delete}* ({files} files) · "
-              f"diff `{diff_bytes}` bytes · threshold `{max_lines}` lines"
+              f"threshold `{max_lines}` lines"
           )
           # Keep a raw github.com URL in-message so Slack AI / Enterprise Search
           # can open the PR without relying on repo indexing alone.
@@ -184,9 +141,8 @@ jobs:
                           "text": {
                               "type": "mrkdwn",
                               "text": (
-                                  "Full unified diff attached as a file. "
-                                  "Review the large change with *GitHub Copilot* on the PR — "
-                                  "keeps #project-mobile readable."
+                                  "Review the full change in *GitHub* with Copilot. "
+                                  "Slack Enterprise Search should use the live PR and repository URLs."
                               ),
                           },
                       },
@@ -208,10 +164,7 @@ jobs:
                   ],
               }
               slack_api("chat.postMessage", payload=payload)
-              upload_diff(
-                  f"Full diff for large PR #{pr_number} — prefer Copilot review on GitHub: {pr_url}"
-              )
-              print(f"Posted large-PR Copilot alert + diff file for #{pr_number}")
+              print(f"Posted large-PR GitHub link for #{pr_number}")
           else:
               files_block = f"*Files*\n{file_list}" if file_list else "*Files*\n_(none)_"
               if len(files_block) > 2900:
@@ -242,13 +195,12 @@ jobs:
                           "elements": [
                               {
                                   "type": "mrkdwn",
-                                  "text": f"Full unified diff attached as `pr-{pr_number}.diff` (files:write).",
+                                  "text": "Review the live PR through GitHub Enterprise Search; no diff is copied into Slack.",
                               }
                           ],
                       },
                   ],
               }
               slack_api("chat.postMessage", payload=payload)
-              upload_diff(f"Full diff for small PR #{pr_number}: {pr_url}")
-              print(f"Posted small PR #{pr_number} summary + full diff file")
+              print(f"Posted small PR #{pr_number} summary + GitHub links")
           PY
