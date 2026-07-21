@@ -5,6 +5,7 @@ const PRODUCTS = [
   { id: "sku-bananas", name: "Fairtrade Bananas", pricePence: 95, aisle: "Fruit" },
   { id: "sku-sourdough", name: "Taste the Difference Sourdough", pricePence: 180, aisle: "Bakery" },
   { id: "sku-eggs-6", name: "Free Range Eggs x6", pricePence: 210, aisle: "Dairy" },
+  { id: "sku-butter-250g", name: "Salted Butter 250g", pricePence: 175, aisle: "Dairy" },
 ];
 
 const PROMOS = {
