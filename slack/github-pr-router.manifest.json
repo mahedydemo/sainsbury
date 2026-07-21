@@ -5,9 +5,9 @@
   },
   "display_information": {
     "name": "GitHub PR Router",
-    "description": "Routes small GitHub PRs into Slack with summaries and diffs; leaves large PRs on GitHub for Copilot.",
+    "description": "Routes GitHub PR summaries and live links into Slack for Enterprise Search and Copilot review.",
     "background_color": "#f06c00",
-    "long_description": "Demo bot for Sainsbury's mobile sample app. GitHub Actions measures PR size — small changes (under the line threshold) are posted to #project-mobile with the PR link, file list, and unified diff. Large PRs skip Slack so reviewers can use GitHub Copilot on the full change set."
+    "long_description": "Demo bot for Sainsbury's mobile sample app. GitHub Actions measures PR size and posts summaries with direct GitHub PR and files links to #project-mobile. Diff files remain in GitHub so Slack Enterprise Search uses the indexed GitHub source."
   },
   "features": {
     "app_home": {
@@ -25,7 +25,6 @@
       "bot": [
         "chat:write",
         "chat:write.public",
-        "files:write",
         "channels:read",
         "groups:read"
       ]
